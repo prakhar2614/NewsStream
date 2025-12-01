@@ -1,6 +1,8 @@
 package com.personal.newsStream.entity.kafka;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -11,8 +13,13 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class KafkaGroup {
+    private String id;
+
     private String name;
 
     private String status;
+
 }

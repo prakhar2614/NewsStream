@@ -1,6 +1,7 @@
 package com.personal.newsStream.entity.kafka;
 
 import lombok.*;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 //import jakarta.persistence.*;
 
 
@@ -15,6 +16,8 @@ import lombok.*;
 @AllArgsConstructor
 //@Entity
 public class KafkaTopic {
+
+    private String id;
 
     private String name;
 

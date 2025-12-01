@@ -19,7 +19,4 @@ public class KafkaTopicCreateEntry {
 
     private int partition;
 
-//    private
-
-
 }
