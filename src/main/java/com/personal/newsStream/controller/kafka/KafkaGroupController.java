@@ -38,5 +38,10 @@ public class KafkaGroupController {
         return kafkaGroupService.findByName(groupName);
     }
 
+    @GetMapping(value = "list")
+    public ResponseEntity listGroups(){
+        return kafkaGroupService.listAllGroups();
+    }
+
 
 }

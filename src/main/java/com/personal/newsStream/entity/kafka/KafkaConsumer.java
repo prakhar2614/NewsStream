@@ -18,7 +18,7 @@ public class KafkaConsumer {
 
     private String name;
 
-    private Map<KafkaGroup, List<KafkaTopic>> groupTopicMap;
+    private Map<String, List<String>> groupTopicMap;
 
     private String status;
 }

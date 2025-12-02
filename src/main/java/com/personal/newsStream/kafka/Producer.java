@@ -1,5 +1,6 @@
 package com.personal.newsStream.kafka;
 
+import com.google.gson.Gson;
 import com.personal.newsStream.definition.KafkaMessageRequestBody;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -30,15 +31,18 @@ public class Producer {
 
     public ResponseEntity<Map<String, Object>> produce(KafkaMessageRequestBody requestBody) {
         String topic = requestBody.getTopicName();
+        System.out.println("topic = "+topic);
         Map<String, Object> message = requestBody.getMessage();
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(message);
         try {
-            ProducerRecord<String, Object> messageMap = new ProducerRecord<>(topic, message);
+            ProducerRecord<String, Object> messageMap = new ProducerRecord<>(topic, jsonString);
             kafkaProducer.send(messageMap);
             LOGGER.error("Message sent");
             return new ResponseEntity(Map.of("response", "Message Sent"), HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("GOT EXCEPTION IN PRODUCER");
-            kafkaProducer.close();
+            System.out.println("GOT EXCEPTION IN PRODUCER e = "+e.getStackTrace());
+//            kafkaProducer.close();
             return new ResponseEntity(Map.of("response", "Message Not Sent"), HttpStatus.GATEWAY_TIMEOUT);
         }
 

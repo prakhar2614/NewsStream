@@ -38,15 +38,21 @@ public class KafkaTopicController {
     }
 
     // find
-    @PutMapping(value = "findByName/{topicName}")
+    @GetMapping(value = "find/{topicName}")
     public ResponseEntity<Map<String, Object>> findByName(@PathVariable(value = "topicName")String topicName){
         return kafkaTopicService.findByName(topicName);
     }
 
     // produce message
     @PostMapping(value = "pushToKafka")
-    public ResponseEntity<Map<String, Object>> pushToKafka(KafkaMessageRequestBody requestBody) {
+    public ResponseEntity<Map<String, Object>> pushToKafka(@RequestBody(required = true) KafkaMessageRequestBody requestBody) {
         return producer.produce(requestBody);
+    }
+
+    // get list of topics message
+    @GetMapping(value = "list")
+    public ResponseEntity<Map<String, Object>> getTopics() {
+        return kafkaTopicService.listAllTopics();
     }
 
 

@@ -1,5 +1,6 @@
 package com.personal.newsStream.service.kafka;
 
+import com.google.gson.Gson;
 import com.personal.newsStream.definition.KafkaConsumerCreateEntity;
 import com.personal.newsStream.definition.KafkaConsumerUpdateEntity;
 import com.personal.newsStream.entity.kafka.KafkaConsumer;
@@ -39,22 +40,22 @@ public class KafkaConsumerService {
         String name = requestBody.getName();
         String status = requestBody.getStatus();
         Map<String, List<String>> groupTopicMap = requestBody.getGroupTopicMap();
-        Map<KafkaGroup, List<KafkaTopic>> kafkaGroupListTopicMap = new HashMap<>();
+        Map<String, List<String>> kafkaGroupListTopicMap = new HashMap<>();
         for (Map.Entry<String, List<String>> entry : groupTopicMap.entrySet()) {
             String groupName = entry.getKey();
             KafkaGroup group = kafkaGroupRepository.findByName(groupName);
             if (group == null) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(Map.of("response","Group not found"), HttpStatus.BAD_REQUEST);
             }
-            List<KafkaTopic> topicList = new ArrayList<>();
+            List<String> topicList = new ArrayList<>();
             for (String topicName : entry.getValue()) {
                 KafkaTopic topic = kafkaTopicRepository.findByName(topicName);
                 if (topic == null) {
-                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>(Map.of("response","Topic not found"),HttpStatus.BAD_REQUEST);
                 }
-                topicList.add(topic);
+                topicList.add(topic.getName());
             }
-            kafkaGroupListTopicMap.put(group, topicList);
+            kafkaGroupListTopicMap.put(group.getName(), topicList);
         }
 
         // CREATE
@@ -79,22 +80,22 @@ public class KafkaConsumerService {
         String name = requestBody.getName();
         String status = requestBody.getStatus();
         Map<String, List<String>> groupTopicMap = requestBody.getGroupTopicMap();
-        Map<KafkaGroup, List<KafkaTopic>> kafkaGroupListTopicMap = new HashMap<>();
+        Map<String, List<String>> kafkaGroupListTopicMap = new HashMap<>();
         for (Map.Entry<String, List<String>> entry : groupTopicMap.entrySet()) {
             String groupName = entry.getKey();
             KafkaGroup group = kafkaGroupRepository.findByName(groupName);
             if (group == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            List<KafkaTopic> topicList = new ArrayList<>();
+            List<String> topicList = new ArrayList<>();
             for (String topicName : entry.getValue()) {
                 KafkaTopic topic = kafkaTopicRepository.findByName(topicName);
                 if (topic == null) {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
-                topicList.add(topic);
+                topicList.add(topic.getName());
             }
-            kafkaGroupListTopicMap.put(group, topicList);
+            kafkaGroupListTopicMap.put(group.getName(), topicList);
         }
 
         existingConsumer.setStatus(status);
@@ -105,6 +106,8 @@ public class KafkaConsumerService {
 
     public ResponseEntity<Map<String, Object>> findByName(String name) {
         KafkaConsumer consumer = kafkaConsumerRepository.findByName(name);
+        Gson gson = new Gson();
+        System.out.println("consumer = "+gson.toJson(consumer));
         if (consumer != null) {
             return new ResponseEntity<>(Map.of("consumer", consumer), HttpStatus.FOUND);
         }
@@ -113,7 +116,7 @@ public class KafkaConsumerService {
 
     public ResponseEntity<Map<String, Object>> startConsumer(String consumerName) {
         ResponseEntity response = findByName(consumerName);
-        if (response.getStatusCode().is2xxSuccessful()) {
+        if (!response.getStatusCode().isError()) {
             KafkaConsumer consumer = (KafkaConsumer) ((Map) response.getBody()).get("consumer");
             Consumer consumer1 = new Consumer(consumer);
             return consumer1.start();

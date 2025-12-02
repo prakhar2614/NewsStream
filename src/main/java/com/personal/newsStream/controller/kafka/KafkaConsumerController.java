@@ -24,12 +24,12 @@ public class KafkaConsumerController {
 //    private Consumer consumer;
 
     @PostMapping(value = "create")
-    public ResponseEntity<Map<String, Object>> create(KafkaConsumerCreateEntity kafkaConsumerCreateEntity) {
+    public ResponseEntity<Map<String, Object>> create(@RequestBody(required = true) KafkaConsumerCreateEntity kafkaConsumerCreateEntity) {
         return kafkaConsumerService.create(kafkaConsumerCreateEntity);
     }
 
     @PutMapping(value = "update")
-    public ResponseEntity<Map<String, Object>> update(KafkaConsumerUpdateEntity kafkaConsumerUpdateEntity) {
+    public ResponseEntity<Map<String, Object>> update(@RequestBody(required = true)KafkaConsumerUpdateEntity kafkaConsumerUpdateEntity) {
         return kafkaConsumerService.update(kafkaConsumerUpdateEntity);
     }
 

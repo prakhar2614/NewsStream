@@ -3,10 +3,12 @@ package com.personal.newsStream.kafka;
 import com.personal.newsStream.entity.kafka.KafkaConsumer;
 import com.personal.newsStream.entity.kafka.KafkaGroup;
 import com.personal.newsStream.entity.kafka.KafkaTopic;
+import com.personal.newsStream.repository.kafka.KafkaGroupRepository;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -25,6 +27,9 @@ public class Consumer {
     private static Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
     private KafkaConsumer kafkaConsumer;
 
+    @Autowired
+    KafkaGroupRepository groupRepository;
+
     public Consumer(com.personal.newsStream.entity.kafka.KafkaConsumer kafkaConsumer) {
         this.kafkaConsumer = kafkaConsumer;
 
@@ -32,30 +37,27 @@ public class Consumer {
 
     public ResponseEntity<Map<String, Object>> start() {
 
-        Map<KafkaGroup, List<KafkaTopic>> groupTopicMap = this.kafkaConsumer.getGroupTopicMap();
-        for (Map.Entry<KafkaGroup, List<KafkaTopic>> entry : groupTopicMap.entrySet()) {
-            KafkaGroup kafkaGroup = entry.getKey();
-            List<KafkaTopic> kafkaTopics = entry.getValue();
-            String groupId = kafkaGroup.getId();
+        Map<String, List<String>> groupTopicMap = this.kafkaConsumer.getGroupTopicMap();
+        for (Map.Entry<String, List<String>> entry : groupTopicMap.entrySet()) {
+            String groupName = entry.getKey();
+            System.out.println("groupId  = "+groupName);
+//            KafkaGroup kafkaGroup = groupRepository.findByName(groupId);
+//            String groupName = kafkaGroup.getName();
 
-            List<String> topicNames = new ArrayList<>();
-            for (KafkaTopic topic : kafkaTopics) {
-                topicNames.add(topic.getName());
-            }
+            List<String> topicNames = entry.getValue();
 
             Properties consumerProperties = new Properties();
             consumerProperties.put("bootstrap.servers", "localhost:9092");
             consumerProperties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
             consumerProperties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-            consumerProperties.put("group.id", groupId);
+            consumerProperties.put("group.id", groupName);
 
             org.apache.kafka.clients.consumer.KafkaConsumer consumer = new org.apache.kafka.clients.consumer.KafkaConsumer(consumerProperties);
             consumer.subscribe(topicNames);
-            Thread t = new Thread(() -> runConsumer(consumer, groupId), "kafka-consumer-" + groupId);
+            Thread t = new Thread(() -> runConsumer(consumer, groupName), "kafka-consumer-" + groupName);
             t.start();
         }
         return new ResponseEntity<>(Map.of("response", "Consumer started"), HttpStatus.OK);
-
     }
 
     private void runConsumer(org.apache.kafka.clients.consumer.KafkaConsumer consumer, String groupId) {
