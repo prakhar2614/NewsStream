@@ -1,10 +1,7 @@
 package com.personal.newsStream.kafka;
 
 import com.personal.newsStream.entity.kafka.KafkaTopic;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.ConsumerGroupListing;
-import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +47,26 @@ public class KafkaManager {
         List<String> groups = new ArrayList<>();
         for (ConsumerGroupListing group : groupListing) {
             groups.add(group.groupId());
+        }
+
+        for (ConsumerGroupListing group : groupListing) {
+
+            String groupId = group.groupId();
+
+            DescribeConsumerGroupsResult result =
+                    admin.describeConsumerGroups(Collections.singleton(groupId));
+
+            System.out.println("Group: " + groupId);
+
+            for (MemberDescription member :
+                    result.all().get().get(groupId).members()) {
+
+                System.out.println("  ConsumerId: " + member.consumerId());
+                System.out.println("  ClientId:   " + member.clientId());
+                System.out.println("  Host:       " + member.host());
+                System.out.println("  Assignments:" + member.assignment().topicPartitions());
+                System.out.println("-----------------------");
+            }
         }
         return groups;
     }

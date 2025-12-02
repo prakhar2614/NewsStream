@@ -1,11 +1,10 @@
 package com.personal.newsStream.kafka;
 
 import com.personal.newsStream.entity.kafka.KafkaConsumer;
-import com.personal.newsStream.entity.kafka.KafkaGroup;
-import com.personal.newsStream.entity.kafka.KafkaTopic;
 import com.personal.newsStream.repository.kafka.KafkaGroupRepository;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -26,13 +25,14 @@ import java.util.Properties;
 public class Consumer {
     private static Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
     private KafkaConsumer kafkaConsumer;
+    public static final Map<String, org.apache.kafka.clients.consumer.KafkaConsumer> consumerMap = new HashMap<>();
+    private final Map<String, Thread> threadMap = new HashMap<>();
 
     @Autowired
     KafkaGroupRepository groupRepository;
 
     public Consumer(com.personal.newsStream.entity.kafka.KafkaConsumer kafkaConsumer) {
         this.kafkaConsumer = kafkaConsumer;
-
     }
 
     public ResponseEntity<Map<String, Object>> start() {
@@ -41,8 +41,6 @@ public class Consumer {
         for (Map.Entry<String, List<String>> entry : groupTopicMap.entrySet()) {
             String groupName = entry.getKey();
             System.out.println("groupId  = "+groupName);
-//            KafkaGroup kafkaGroup = groupRepository.findByName(groupId);
-//            String groupName = kafkaGroup.getName();
 
             List<String> topicNames = entry.getValue();
 
@@ -54,7 +52,9 @@ public class Consumer {
 
             org.apache.kafka.clients.consumer.KafkaConsumer consumer = new org.apache.kafka.clients.consumer.KafkaConsumer(consumerProperties);
             consumer.subscribe(topicNames);
+            consumerMap.put(groupName, consumer);
             Thread t = new Thread(() -> runConsumer(consumer, groupName), "kafka-consumer-" + groupName);
+            threadMap.put(groupName, t);
             t.start();
         }
         return new ResponseEntity<>(Map.of("response", "Consumer started"), HttpStatus.OK);
@@ -73,16 +73,20 @@ public class Consumer {
                             record.value());
                 }
             }
-        } catch (Exception e) {
-            LOGGER.error("Error in consumer for group {}", groupId, e);
+        } catch (WakeupException e) {
+            LOGGER.info("Stopping consumer for group " + groupId);
         } finally {
             consumer.close();
             LOGGER.info("Consumer closed for group {}", groupId);
         }
     }
 
-    public void stop(String consumerName) {
-
-//        Consumer consumer = con
+    public ResponseEntity<Map<String, Object>> stop(String groupName) {
+        org.apache.kafka.clients.consumer.KafkaConsumer consumer = consumerMap.get(groupName);
+        if (consumer != null){
+            consumer.wakeup();
+            return new ResponseEntity<>(Map.of("response", "Consumer stopped"), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(Map.of("response", "Consumer already stopped"), HttpStatus.ACCEPTED);
     }
 }

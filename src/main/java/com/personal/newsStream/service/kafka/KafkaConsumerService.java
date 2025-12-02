@@ -7,6 +7,7 @@ import com.personal.newsStream.entity.kafka.KafkaConsumer;
 import com.personal.newsStream.entity.kafka.KafkaGroup;
 import com.personal.newsStream.entity.kafka.KafkaTopic;
 import com.personal.newsStream.kafka.Consumer;
+import com.personal.newsStream.kafka.KafkaManager;
 import com.personal.newsStream.repository.kafka.KafkaConsumerRepository;
 import com.personal.newsStream.repository.kafka.KafkaGroupRepository;
 import com.personal.newsStream.repository.kafka.KafkaTopicRepository;
@@ -120,6 +121,25 @@ public class KafkaConsumerService {
             KafkaConsumer consumer = (KafkaConsumer) ((Map) response.getBody()).get("consumer");
             Consumer consumer1 = new Consumer(consumer);
             return consumer1.start();
+        } else {
+            return new ResponseEntity<>(Map.of("response", "Consumer not found for given name"), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    public ResponseEntity<Map<String, Object>> stopConsumer(String consumerName) {
+        ResponseEntity response = findByName(consumerName);
+        if (!response.getStatusCode().isError()) {
+            KafkaConsumer consumer = (KafkaConsumer) ((Map) response.getBody()).get("consumer");
+            Map<String, List<String>> groupListMap = consumer.getGroupTopicMap();
+            Consumer consumer1 = new Consumer(consumer);
+            for (Map.Entry<String, List<String>> entry: groupListMap.entrySet()){
+                String groupName = entry.getKey();
+                ResponseEntity response1 = consumer1.stop(groupName);
+                if (response1.getStatusCode().isError()){
+                    return response1;
+                }
+            }
+            return new ResponseEntity<>(Map.of("response", "Consumer stopped"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(Map.of("response", "Consumer not found for given name"), HttpStatus.BAD_REQUEST);
         }

@@ -43,5 +43,13 @@ public class KafkaConsumerController {
         return kafkaConsumerService.startConsumer(consumerName);
     }
 
+    @PostMapping(value = "stop/{consumerName}")
+    public ResponseEntity<Map<String, Object>> consumerStop(@PathVariable(value = "consumerName") String consumerName) {
+        return kafkaConsumerService.stopConsumer(consumerName);
+    }
+
+    // stop
+    // delete
+
 
 }
