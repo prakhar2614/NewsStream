@@ -1,10 +1,11 @@
 package com.personal.newsStream.controller.kafka;
 
+import com.personal.newsStream.definition.KafkaMessageRequestBody;
 import com.personal.newsStream.definition.KafkaTopicCreateEntry;
 import com.personal.newsStream.definition.KafkaTopicUpdateEntry;
+import com.personal.newsStream.kafka.Producer;
 import com.personal.newsStream.service.kafka.KafkaTopicService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,9 @@ public class KafkaTopicController {
 
     @Autowired
     KafkaTopicService kafkaTopicService;
+
+    @Autowired
+    private Producer producer;
     // Create
     @PostMapping(value = "create")
     public ResponseEntity<Map<String, Object>> create(@RequestBody(required = true) KafkaTopicCreateEntry requestBody){
@@ -39,7 +43,11 @@ public class KafkaTopicController {
         return kafkaTopicService.findByName(topicName);
     }
 
-
+    // produce message
+    @PostMapping(value = "pushToKafka")
+    public ResponseEntity<Map<String, Object>> pushToKafka(KafkaMessageRequestBody requestBody) {
+        return producer.produce(requestBody);
+    }
 
 
     // create

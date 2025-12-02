@@ -1,11 +1,15 @@
 package com.personal.newsStream.kafka;
 
+import com.personal.newsStream.definition.KafkaMessageRequestBody;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Properties;
 
 @Service
@@ -24,14 +28,18 @@ public class Producer {
     }
 
 
-    public void produce(String topic, String message) {
+    public ResponseEntity<Map<String, Object>> produce(KafkaMessageRequestBody requestBody) {
+        String topic = requestBody.getTopicName();
+        Map<String, Object> message = requestBody.getMessage();
         try {
-            ProducerRecord<String, String> messageMap = new ProducerRecord<>(topic, message);
+            ProducerRecord<String, Object> messageMap = new ProducerRecord<>(topic, message);
             kafkaProducer.send(messageMap);
             LOGGER.error("Message sent");
+            return new ResponseEntity(Map.of("response", "Message Sent"), HttpStatus.OK);
         } catch (Exception e) {
             System.out.println("GOT EXCEPTION IN PRODUCER");
             kafkaProducer.close();
+            return new ResponseEntity(Map.of("response", "Message Not Sent"), HttpStatus.GATEWAY_TIMEOUT);
         }
 
     }

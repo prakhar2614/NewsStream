@@ -1,5 +1,6 @@
 package com.personal.newsStream.definition;
 
+import com.personal.newsStream.constants.kafka.Status;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,6 @@ import lombok.Setter;
 public class KafkaGroupCreateEntry {
 
     String name;
-    String status;
+    private String status = Status.PUBLISHED.name();
 
 }

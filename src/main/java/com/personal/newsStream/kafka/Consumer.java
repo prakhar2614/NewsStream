@@ -1,13 +1,18 @@
 package com.personal.newsStream.kafka;
 
-import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import com.personal.newsStream.entity.kafka.KafkaConsumer;
+import com.personal.newsStream.entity.kafka.KafkaGroup;
+import com.personal.newsStream.entity.kafka.KafkaTopic;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -18,45 +23,64 @@ import java.util.Properties;
  */
 public class Consumer {
     private static Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
-    private KafkaConsumer<String, String> consumer;
-    String name;
-    public Consumer(String name, String topic, String group) {
+    private KafkaConsumer kafkaConsumer;
 
-        Properties consumerProperties = new Properties();
-
-        consumerProperties.put("bootstrap.servers", "localhost:9092");
-        consumerProperties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        consumerProperties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        System.out.println("%%%%%%");
-        consumerProperties.put("group.id", group);
-
-        this.name = name;
-        consumer = new KafkaConsumer<>(consumerProperties);
-
-        Thread t = new Thread(new ConsumerThread(this, topic));
-        t.start();
-    }
-
-    public void create(String name, Map<String,String> topicGroupMap){
+    public Consumer(com.personal.newsStream.entity.kafka.KafkaConsumer kafkaConsumer) {
+        this.kafkaConsumer = kafkaConsumer;
 
     }
 
-    public void start(String topic){
-        System.out.println("Consumer called");
+    public ResponseEntity<Map<String, Object>> start() {
 
-        System.out.println("Consumer subscribing");
-        consumer.subscribe(Collections.singleton(topic));
-        System.out.println("Consumer subscribed");
+        Map<KafkaGroup, List<KafkaTopic>> groupTopicMap = this.kafkaConsumer.getGroupTopicMap();
+        for (Map.Entry<KafkaGroup, List<KafkaTopic>> entry : groupTopicMap.entrySet()) {
+            KafkaGroup kafkaGroup = entry.getKey();
+            List<KafkaTopic> kafkaTopics = entry.getValue();
+            String groupId = kafkaGroup.getId();
 
-        while(true){
-            ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(30));
-            for (ConsumerRecord<String, String> record: records){
-                System.out.println(record.value());
+            List<String> topicNames = new ArrayList<>();
+            for (KafkaTopic topic : kafkaTopics) {
+                topicNames.add(topic.getName());
             }
+
+            Properties consumerProperties = new Properties();
+            consumerProperties.put("bootstrap.servers", "localhost:9092");
+            consumerProperties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+            consumerProperties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+            consumerProperties.put("group.id", groupId);
+
+            org.apache.kafka.clients.consumer.KafkaConsumer consumer = new org.apache.kafka.clients.consumer.KafkaConsumer(consumerProperties);
+            consumer.subscribe(topicNames);
+            Thread t = new Thread(() -> runConsumer(consumer, groupId), "kafka-consumer-" + groupId);
+            t.start();
+        }
+        return new ResponseEntity<>(Map.of("response", "Consumer started"), HttpStatus.OK);
+
+    }
+
+    private void runConsumer(org.apache.kafka.clients.consumer.KafkaConsumer consumer, String groupId) {
+        try {
+            while (true) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(30));
+                for (ConsumerRecord<String, String> record : records) {
+                    LOGGER.info("Group: {}, Topic: {}, Partition: {}, Offset: {}, Value: {}",
+                            groupId,
+                            record.topic(),
+                            record.partition(),
+                            record.offset(),
+                            record.value());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error in consumer for group {}", groupId, e);
+        } finally {
+            consumer.close();
+            LOGGER.info("Consumer closed for group {}", groupId);
         }
     }
 
-    public void stop(String name){
+    public void stop(String consumerName) {
+
 //        Consumer consumer = con
     }
 }

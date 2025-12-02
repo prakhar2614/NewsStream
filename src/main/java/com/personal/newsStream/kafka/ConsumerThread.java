@@ -1,5 +1,7 @@
 package com.personal.newsStream.kafka;
 
+import java.util.List;
+
 /**
  * prakhar: 29/11/25
  *
@@ -9,15 +11,15 @@ package com.personal.newsStream.kafka;
 class ConsumerThread implements Runnable{
 
     private final Consumer consumer;
-    private final String topic;
+    private final List<String> topic;
 
-    public ConsumerThread(Consumer consumer, String topic){
+    public ConsumerThread(Consumer consumer, List<String> topic) {
         this.consumer = consumer;
         this.topic = topic;
     }
 
     @Override
     public void run(){
-        this.consumer.start(this.topic);
+        this.consumer.start();
     }
 }

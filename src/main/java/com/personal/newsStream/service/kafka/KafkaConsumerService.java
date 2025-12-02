@@ -2,11 +2,10 @@ package com.personal.newsStream.service.kafka;
 
 import com.personal.newsStream.definition.KafkaConsumerCreateEntity;
 import com.personal.newsStream.definition.KafkaConsumerUpdateEntity;
-import com.personal.newsStream.definition.KafkaTopicCreateEntry;
-import com.personal.newsStream.definition.KafkaTopicUpdateEntry;
 import com.personal.newsStream.entity.kafka.KafkaConsumer;
 import com.personal.newsStream.entity.kafka.KafkaGroup;
 import com.personal.newsStream.entity.kafka.KafkaTopic;
+import com.personal.newsStream.kafka.Consumer;
 import com.personal.newsStream.repository.kafka.KafkaConsumerRepository;
 import com.personal.newsStream.repository.kafka.KafkaGroupRepository;
 import com.personal.newsStream.repository.kafka.KafkaTopicRepository;
@@ -36,23 +35,21 @@ public class KafkaConsumerService {
     @Autowired
     KafkaTopicRepository kafkaTopicRepository;
 
-
-
     public ResponseEntity<Map<String, Object>> create(KafkaConsumerCreateEntity requestBody) {
         String name = requestBody.getName();
         String status = requestBody.getStatus();
         Map<String, List<String>> groupTopicMap = requestBody.getGroupTopicMap();
         Map<KafkaGroup, List<KafkaTopic>> kafkaGroupListTopicMap = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry: groupTopicMap.entrySet()){
+        for (Map.Entry<String, List<String>> entry : groupTopicMap.entrySet()) {
             String groupName = entry.getKey();
             KafkaGroup group = kafkaGroupRepository.findByName(groupName);
-            if (group == null){
+            if (group == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            List<KafkaTopic>topicList = new ArrayList<>();
-            for(String topicName: entry.getValue()){
+            List<KafkaTopic> topicList = new ArrayList<>();
+            for (String topicName : entry.getValue()) {
                 KafkaTopic topic = kafkaTopicRepository.findByName(topicName);
-                if (topic== null){
+                if (topic == null) {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
                 topicList.add(topic);
@@ -83,16 +80,16 @@ public class KafkaConsumerService {
         String status = requestBody.getStatus();
         Map<String, List<String>> groupTopicMap = requestBody.getGroupTopicMap();
         Map<KafkaGroup, List<KafkaTopic>> kafkaGroupListTopicMap = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry: groupTopicMap.entrySet()){
+        for (Map.Entry<String, List<String>> entry : groupTopicMap.entrySet()) {
             String groupName = entry.getKey();
             KafkaGroup group = kafkaGroupRepository.findByName(groupName);
-            if (group == null){
+            if (group == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            List<KafkaTopic>topicList = new ArrayList<>();
-            for(String topicName: entry.getValue()){
+            List<KafkaTopic> topicList = new ArrayList<>();
+            for (String topicName : entry.getValue()) {
                 KafkaTopic topic = kafkaTopicRepository.findByName(topicName);
-                if (topic== null){
+                if (topic == null) {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
                 topicList.add(topic);
@@ -106,11 +103,22 @@ public class KafkaConsumerService {
         return new ResponseEntity<>(Map.of("consumer", kafkaConsumerRepository.save(existingConsumer)), HttpStatus.OK);
     }
 
-    public ResponseEntity findByName(String name) {
+    public ResponseEntity<Map<String, Object>> findByName(String name) {
         KafkaConsumer consumer = kafkaConsumerRepository.findByName(name);
         if (consumer != null) {
             return new ResponseEntity<>(Map.of("consumer", consumer), HttpStatus.FOUND);
         }
         return new ResponseEntity(new HashMap<>(), HttpStatus.BAD_REQUEST);
+    }
+
+    public ResponseEntity<Map<String, Object>> startConsumer(String consumerName) {
+        ResponseEntity response = findByName(consumerName);
+        if (response.getStatusCode().is2xxSuccessful()) {
+            KafkaConsumer consumer = (KafkaConsumer) ((Map) response.getBody()).get("consumer");
+            Consumer consumer1 = new Consumer(consumer);
+            return consumer1.start();
+        } else {
+            return new ResponseEntity<>(Map.of("response", "Consumer not found for given name"), HttpStatus.BAD_REQUEST);
+        }
     }
 }
