@@ -14,7 +14,7 @@ import lombok.Setter;
 @Setter
 public class KafkaGroupCreateEntry {
 
-    String name;
+    private String name;
     private String status = Status.PUBLISHED.name();
 
 }

@@ -2,6 +2,7 @@ package com.personal.newsStream.kafka;
 
 import com.personal.newsStream.entity.kafka.KafkaTopic;
 import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.common.TopicPartition;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +41,31 @@ public class KafkaManager {
 
     public List<String> topicList() throws ExecutionException, InterruptedException {
         return this.admin.listTopics().names().get().stream().toList();
+    }
+
+    public List<String> topicOffset(String topicName) throws ExecutionException, InterruptedException {
+        var topicDescription = this.admin.describeTopics(List.of(topicName)).allTopicNames().get();
+        var partitions = topicDescription.get(topicName).partitions();
+        System.out.println("partitions = "+ partitions);
+
+        Map<TopicPartition, OffsetSpec> partitionMap = new HashMap<>();
+        for (var p: partitions){
+            TopicPartition topicPartition = new TopicPartition(topicName, p.partition());
+            partitionMap.put(topicPartition, OffsetSpec.latest());
+        }
+
+        ListOffsetsResult result = admin.listOffsets(partitionMap);
+        List<String> offsets = new ArrayList<>();
+
+        int totalOffSet = 0;
+        for (var entry : partitionMap.entrySet()) {
+            var tp = entry.getKey();
+            var offset = result.partitionResult(tp).get().offset();
+            totalOffSet += offset;
+            offsets.add("Partition: " + tp.partition() + " -> Offset: " + offset);
+        }
+        offsets.add("total offset: "+totalOffSet);
+        return offsets;
     }
 
     public List<String> groupList() throws ExecutionException, InterruptedException {
